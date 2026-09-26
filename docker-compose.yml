@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: courier-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: courier_platform
+    ports:
+      - '55432:5432'
+    volumes:
+      - courier-pgdata:/var/lib/postgresql/data
+      # Creates the separate database the test suite uses, so `npm test` never touches
+      # development data.
+      - ./scripts/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  courier-pgdata:
