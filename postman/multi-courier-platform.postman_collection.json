@@ -1,0 +1,596 @@
+{
+  "info": {
+    "name": "Multi-Courier Integration Platform",
+    "description": "Unified, courier-agnostic logistics API.\n\nSet `baseUrl` and `apiKey` in the collection variables. `order_id` and `batch_id` are captured automatically by the create requests, so the folders can be run top to bottom.\n\nEvery request body is our own normalized schema — the caller never sees a courier payload. Switching `courier_partner` between \"urbanebolt\" and \"mock\" is the only change needed to route an identical order to a different carrier.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "apiKey",
+      "value": "local-dev-key"
+    },
+    {
+      "key": "order_id",
+      "value": "ORD-2026-0001"
+    },
+    {
+      "key": "batch_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Service",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Liveness plus a database round trip. Unauthenticated so an orchestrator can probe it."
+          },
+          "response": []
+        },
+        {
+          "name": "List supported couriers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/couriers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "couriers"
+              ]
+            },
+            "description": "Read straight from the adapter registry. A newly added adapter appears here with no code change, which is the quickest way to confirm a plug-in worked."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Create order (UrbaneBolt)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.order_id) {",
+                  "  pm.collectionVariables.set(\"order_id\", body.data.order_id);",
+                  "}",
+                  "pm.test(\"created\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courier_partner\": \"urbanebolt\",\n  \"order_id\": \"{{order_id}}\",\n  \"service_type\": \"SDD\",\n  \"payment_mode\": \"COD\",\n  \"shipment\": {\n    \"weight_kg\": 1.1,\n    \"dimensions_cm\": {\n      \"length\": 12,\n      \"breadth\": 10,\n      \"height\": 10\n    },\n    \"pieces\": 1,\n    \"declared_value\": 100,\n    \"collectable_value\": 500,\n    \"item_description\": \"BOOKS\",\n    \"item_quantity\": 1\n  },\n  \"invoice\": {\n    \"number\": \"INV-0002\",\n    \"date\": \"2026-09-20\",\n    \"value\": 500\n  },\n  \"pickup\": {\n    \"name\": \"Rohit Athaley\",\n    \"phone\": \"9425018023\",\n    \"email\": \"seller@example.com\",\n    \"address_line\": \"Plot No. 137-138, Sector-I, Special Industrial Area, Govindpura\",\n    \"address_type\": \"Seller\",\n    \"city\": \"Bhopal\",\n    \"state\": \"Madhya Pradesh\",\n    \"pincode\": \"122017\",\n    \"country\": \"INDIA\"\n  },\n  \"delivery\": {\n    \"name\": \"Satyam Convent School\",\n    \"phone\": \"8320226438\",\n    \"email\": \"buyer@example.com\",\n    \"address_line\": \"Plot No. 26-27, Om Nagar Society, Sumbhal\",\n    \"address_type\": \"Home\",\n    \"city\": \"Surat\",\n    \"state\": \"Gujarat\",\n    \"pincode\": \"122001\",\n    \"country\": \"INDIA\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            },
+            "description": "Creates a shipment with UrbaneBolt and stores the full courier exchange for audit."
+          },
+          "response": []
+        },
+        {
+          "name": "Create order (MockCourier)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.order_id) {",
+                  "  pm.collectionVariables.set(\"order_id\", body.data.order_id);",
+                  "}",
+                  "pm.test(\"created\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courier_partner\": \"mock\",\n  \"order_id\": \"MOCK-{{$timestamp}}\",\n  \"service_type\": \"SDD\",\n  \"payment_mode\": \"COD\",\n  \"shipment\": {\n    \"weight_kg\": 1.1,\n    \"dimensions_cm\": {\n      \"length\": 12,\n      \"breadth\": 10,\n      \"height\": 10\n    },\n    \"pieces\": 1,\n    \"declared_value\": 100,\n    \"collectable_value\": 500,\n    \"item_description\": \"BOOKS\",\n    \"item_quantity\": 1\n  },\n  \"invoice\": {\n    \"number\": \"INV-0002\",\n    \"date\": \"2026-09-20\",\n    \"value\": 500\n  },\n  \"pickup\": {\n    \"name\": \"Rohit Athaley\",\n    \"phone\": \"9425018023\",\n    \"email\": \"seller@example.com\",\n    \"address_line\": \"Plot No. 137-138, Sector-I, Special Industrial Area, Govindpura\",\n    \"address_type\": \"Seller\",\n    \"city\": \"Bhopal\",\n    \"state\": \"Madhya Pradesh\",\n    \"pincode\": \"122017\",\n    \"country\": \"INDIA\"\n  },\n  \"delivery\": {\n    \"name\": \"Satyam Convent School\",\n    \"phone\": \"8320226438\",\n    \"email\": \"buyer@example.com\",\n    \"address_line\": \"Plot No. 26-27, Om Nagar Society, Sumbhal\",\n    \"address_type\": \"Home\",\n    \"city\": \"Surat\",\n    \"state\": \"Gujarat\",\n    \"pincode\": \"122001\",\n    \"country\": \"INDIA\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            },
+            "description": "The identical payload with one field changed. Demonstrates that the consumer contract is truly courier-agnostic, and works offline."
+          },
+          "response": []
+        },
+        {
+          "name": "Get order",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{order_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "{{order_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Track order",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{order_id}}/track",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "{{order_id}}",
+                "track"
+              ]
+            },
+            "description": "Fetches live status from the courier and appends any new scans to the append-only tracking history. Against MockCourier the shipment advances one step per call."
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{order_id}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "{{order_id}}",
+                "cancel"
+              ]
+            },
+            "description": "Safe to repeat — an already-cancelled shipment returns 200, not an error."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Bulk",
+      "item": [
+        {
+          "name": "Create orders in bulk",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.batch_id) {",
+                  "  pm.collectionVariables.set(\"batch_id\", body.data.batch_id);",
+                  "}",
+                  "pm.test(\"accepted\", () => pm.response.to.have.status(202));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orders\": [\n    {\n      \"courier_partner\": \"mock\",\n      \"order_id\": \"BULK-DEMO-1\",\n      \"service_type\": \"SDD\",\n      \"payment_mode\": \"COD\",\n      \"shipment\": {\n        \"weight_kg\": 1.1,\n        \"dimensions_cm\": {\n          \"length\": 12,\n          \"breadth\": 10,\n          \"height\": 10\n        },\n        \"pieces\": 1,\n        \"declared_value\": 100,\n        \"collectable_value\": 500,\n        \"item_description\": \"BOOKS\",\n        \"item_quantity\": 1\n      },\n      \"invoice\": {\n        \"number\": \"INV-0002\",\n        \"date\": \"2026-09-20\",\n        \"value\": 500\n      },\n      \"pickup\": {\n        \"name\": \"Rohit Athaley\",\n        \"phone\": \"9425018023\",\n        \"email\": \"seller@example.com\",\n        \"address_line\": \"Plot No. 137-138, Sector-I, Special Industrial Area, Govindpura\",\n        \"address_type\": \"Seller\",\n        \"city\": \"Bhopal\",\n        \"state\": \"Madhya Pradesh\",\n        \"pincode\": \"122017\",\n        \"country\": \"INDIA\"\n      },\n      \"delivery\": {\n        \"name\": \"Satyam Convent School\",\n        \"phone\": \"8320226438\",\n        \"email\": \"buyer@example.com\",\n        \"address_line\": \"Plot No. 26-27, Om Nagar Society, Sumbhal\",\n        \"address_type\": \"Home\",\n        \"city\": \"Surat\",\n        \"state\": \"Gujarat\",\n        \"pincode\": \"122001\",\n        \"country\": \"INDIA\"\n      }\n    },\n    {\n      \"courier_partner\": \"mock\",\n      \"order_id\": \"BULK-DEMO-2\",\n      \"service_type\": \"SDD\",\n      \"payment_mode\": \"COD\",\n      \"shipment\": {\n        \"weight_kg\": 1.1,\n        \"dimensions_cm\": {\n          \"length\": 12,\n          \"breadth\": 10,\n          \"height\": 10\n        },\n        \"pieces\": 1,\n        \"declared_value\": 100,\n        \"collectable_value\": 500,\n        \"item_description\": \"BOOKS\",\n        \"item_quantity\": 1\n      },\n      \"invoice\": {\n        \"number\": \"INV-0002\",\n        \"date\": \"2026-09-20\",\n        \"value\": 500\n      },\n      \"pickup\": {\n        \"name\": \"Rohit Athaley\",\n        \"phone\": \"9425018023\",\n        \"email\": \"seller@example.com\",\n        \"address_line\": \"Plot No. 137-138, Sector-I, Special Industrial Area, Govindpura\",\n        \"address_type\": \"Seller\",\n        \"city\": \"Bhopal\",\n        \"state\": \"Madhya Pradesh\",\n        \"pincode\": \"122017\",\n        \"country\": \"INDIA\"\n      },\n      \"delivery\": {\n        \"name\": \"Satyam Convent School\",\n        \"phone\": \"8320226438\",\n        \"email\": \"buyer@example.com\",\n        \"address_line\": \"Plot No. 26-27, Om Nagar Society, Sumbhal\",\n        \"address_type\": \"Home\",\n        \"city\": \"Surat\",\n        \"state\": \"Gujarat\",\n        \"pincode\": \"122001\",\n        \"country\": \"INDIA\"\n      }\n    },\n    {\n      \"courier_partner\": \"urbanebolt\",\n      \"order_id\": \"BULK-DEMO-3\",\n      \"service_type\": \"SDD\",\n      \"payment_mode\": \"COD\",\n      \"shipment\": {\n        \"weight_kg\": 1.1,\n        \"dimensions_cm\": {\n          \"length\": 12,\n          \"breadth\": 10,\n          \"height\": 10\n        },\n        \"pieces\": 1,\n        \"declared_value\": 100,\n        \"collectable_value\": 500,\n        \"item_description\": \"BOOKS\",\n        \"item_quantity\": 1\n      },\n      \"invoice\": {\n        \"number\": \"INV-0002\",\n        \"date\": \"2026-09-20\",\n        \"value\": 500\n      },\n      \"pickup\": {\n        \"name\": \"Rohit Athaley\",\n        \"phone\": \"9425018023\",\n        \"email\": \"seller@example.com\",\n        \"address_line\": \"Plot No. 137-138, Sector-I, Special Industrial Area, Govindpura\",\n        \"address_type\": \"Seller\",\n        \"city\": \"Bhopal\",\n        \"state\": \"Madhya Pradesh\",\n        \"pincode\": \"122017\",\n        \"country\": \"INDIA\"\n      },\n      \"delivery\": {\n        \"name\": \"Satyam Convent School\",\n        \"phone\": \"8320226438\",\n        \"email\": \"buyer@example.com\",\n        \"address_line\": \"Plot No. 26-27, Om Nagar Society, Sumbhal\",\n        \"address_type\": \"Home\",\n        \"city\": \"Surat\",\n        \"state\": \"Gujarat\",\n        \"pincode\": \"122001\",\n        \"country\": \"INDIA\"\n      }\n    },\n    {\n      \"courier_partner\": \"mock\",\n      \"order_id\": \"BULK-DEMO-1\",\n      \"service_type\": \"SDD\",\n      \"payment_mode\": \"COD\",\n      \"shipment\": {\n        \"weight_kg\": 1.1,\n        \"dimensions_cm\": {\n          \"length\": 12,\n          \"breadth\": 10,\n          \"height\": 10\n        },\n        \"pieces\": 1,\n        \"declared_value\": 100,\n        \"collectable_value\": 500,\n        \"item_description\": \"BOOKS\",\n        \"item_quantity\": 1\n      },\n      \"invoice\": {\n        \"number\": \"INV-0002\",\n        \"date\": \"2026-09-20\",\n        \"value\": 500\n      },\n      \"pickup\": {\n        \"name\": \"Rohit Athaley\",\n        \"phone\": \"9425018023\",\n        \"email\": \"seller@example.com\",\n        \"address_line\": \"Plot No. 137-138, Sector-I, Special Industrial Area, Govindpura\",\n        \"address_type\": \"Seller\",\n        \"city\": \"Bhopal\",\n        \"state\": \"Madhya Pradesh\",\n        \"pincode\": \"122017\",\n        \"country\": \"INDIA\"\n      },\n      \"delivery\": {\n        \"name\": \"Satyam Convent School\",\n        \"phone\": \"8320226438\",\n        \"email\": \"buyer@example.com\",\n        \"address_line\": \"Plot No. 26-27, Om Nagar Society, Sumbhal\",\n        \"address_type\": \"Home\",\n        \"city\": \"Surat\",\n        \"state\": \"Gujarat\",\n        \"pincode\": \"122001\",\n        \"country\": \"INDIA\"\n      }\n    },\n    {\n      \"courier_partner\": \"mock\",\n      \"order_id\": \"BULK-DEMO-BAD-PINCODE\",\n      \"service_type\": \"SDD\",\n      \"payment_mode\": \"COD\",\n      \"shipment\": {\n        \"weight_kg\": 1.1,\n        \"dimensions_cm\": {\n          \"length\": 12,\n          \"breadth\": 10,\n          \"height\": 10\n        },\n        \"pieces\": 1,\n        \"declared_value\": 100,\n        \"collectable_value\": 500,\n        \"item_description\": \"BOOKS\",\n        \"item_quantity\": 1\n      },\n      \"invoice\": {\n        \"number\": \"INV-0002\",\n        \"date\": \"2026-09-20\",\n        \"value\": 500\n      },\n      \"pickup\": {\n        \"name\": \"Rohit Athaley\",\n        \"phone\": \"9425018023\",\n        \"email\": \"seller@example.com\",\n        \"address_line\": \"Plot No. 137-138, Sector-I, Special Industrial Area, Govindpura\",\n        \"address_type\": \"Seller\",\n        \"city\": \"Bhopal\",\n        \"state\": \"Madhya Pradesh\",\n        \"pincode\": \"122017\",\n        \"country\": \"INDIA\"\n      },\n      \"delivery\": {\n        \"name\": \"Satyam Convent School\",\n        \"phone\": \"8320226438\",\n        \"email\": \"buyer@example.com\",\n        \"address_line\": \"Plot No. 26-27, Om Nagar Society, Sumbhal\",\n        \"address_type\": \"Home\",\n        \"city\": \"Surat\",\n        \"state\": \"Gujarat\",\n        \"pincode\": \"12\",\n        \"country\": \"INDIA\"\n      }\n    },\n    {\n      \"courier_partner\": \"delhivery\",\n      \"order_id\": \"BULK-DEMO-UNKNOWN-COURIER\",\n      \"service_type\": \"SDD\",\n      \"payment_mode\": \"COD\",\n      \"shipment\": {\n        \"weight_kg\": 1.1,\n        \"dimensions_cm\": {\n          \"length\": 12,\n          \"breadth\": 10,\n          \"height\": 10\n        },\n        \"pieces\": 1,\n        \"declared_value\": 100,\n        \"collectable_value\": 500,\n        \"item_description\": \"BOOKS\",\n        \"item_quantity\": 1\n      },\n      \"invoice\": {\n        \"number\": \"INV-0002\",\n        \"date\": \"2026-09-20\",\n        \"value\": 500\n      },\n      \"pickup\": {\n        \"name\": \"Rohit Athaley\",\n        \"phone\": \"9425018023\",\n        \"email\": \"seller@example.com\",\n        \"address_line\": \"Plot No. 137-138, Sector-I, Special Industrial Area, Govindpura\",\n        \"address_type\": \"Seller\",\n        \"city\": \"Bhopal\",\n        \"state\": \"Madhya Pradesh\",\n        \"pincode\": \"122017\",\n        \"country\": \"INDIA\"\n      },\n      \"delivery\": {\n        \"name\": \"Satyam Convent School\",\n        \"phone\": \"8320226438\",\n        \"email\": \"buyer@example.com\",\n        \"address_line\": \"Plot No. 26-27, Om Nagar Society, Sumbhal\",\n        \"address_type\": \"Home\",\n        \"city\": \"Surat\",\n        \"state\": \"Gujarat\",\n        \"pincode\": \"122001\",\n        \"country\": \"INDIA\"\n      }\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/bulk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "bulk"
+              ]
+            },
+            "description": "Accepts up to 100 orders and answers 202 with a batch_id immediately; processing happens in the background with bounded concurrency.\n\nThis sample deliberately mixes couriers and includes three failures — a duplicate order_id, a bad pincode and an unknown courier — to show per-order partial success."
+          },
+          "response": []
+        },
+        {
+          "name": "Get batch status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/bulk/{{batch_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "bulk",
+                "{{batch_id}}"
+              ]
+            },
+            "description": "Live progress plus a per-order result with a reason for every failure."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error cases",
+      "item": [
+        {
+          "name": "Unknown courier -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courier_partner\": \"delhivery\",\n  \"order_id\": \"ERR-UNKNOWN-COURIER\",\n  \"service_type\": \"SDD\",\n  \"payment_mode\": \"COD\",\n  \"shipment\": {\n    \"weight_kg\": 1.1,\n    \"dimensions_cm\": {\n      \"length\": 12,\n      \"breadth\": 10,\n      \"height\": 10\n    },\n    \"pieces\": 1,\n    \"declared_value\": 100,\n    \"collectable_value\": 500,\n    \"item_description\": \"BOOKS\",\n    \"item_quantity\": 1\n  },\n  \"invoice\": {\n    \"number\": \"INV-0002\",\n    \"date\": \"2026-09-20\",\n    \"value\": 500\n  },\n  \"pickup\": {\n    \"name\": \"Rohit Athaley\",\n    \"phone\": \"9425018023\",\n    \"email\": \"seller@example.com\",\n    \"address_line\": \"Plot No. 137-138, Sector-I, Special Industrial Area, Govindpura\",\n    \"address_type\": \"Seller\",\n    \"city\": \"Bhopal\",\n    \"state\": \"Madhya Pradesh\",\n    \"pincode\": \"122017\",\n    \"country\": \"INDIA\"\n  },\n  \"delivery\": {\n    \"name\": \"Satyam Convent School\",\n    \"phone\": \"8320226438\",\n    \"email\": \"buyer@example.com\",\n    \"address_line\": \"Plot No. 26-27, Om Nagar Society, Sumbhal\",\n    \"address_type\": \"Home\",\n    \"city\": \"Surat\",\n    \"state\": \"Gujarat\",\n    \"pincode\": \"122001\",\n    \"country\": \"INDIA\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            },
+            "description": "Returns UNSUPPORTED_COURIER with the list of supported couriers in `details`."
+          },
+          "response": []
+        },
+        {
+          "name": "Validation error -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courier_partner\": \"urbanebolt\",\n  \"order_id\": \"ERR-VALIDATION\",\n  \"service_type\": \"SDD\",\n  \"payment_mode\": \"COD\",\n  \"shipment\": {\n    \"weight_kg\": 1.1,\n    \"dimensions_cm\": {\n      \"length\": 12,\n      \"breadth\": 10,\n      \"height\": 10\n    },\n    \"pieces\": 1,\n    \"declared_value\": 100,\n    \"collectable_value\": 500,\n    \"item_description\": \"BOOKS\",\n    \"item_quantity\": 1\n  },\n  \"invoice\": {\n    \"number\": \"INV-0002\",\n    \"date\": \"2026-09-20\",\n    \"value\": 500\n  },\n  \"pickup\": {\n    \"name\": \"Rohit Athaley\",\n    \"phone\": \"9425018023\",\n    \"email\": \"seller@example.com\",\n    \"address_line\": \"Plot No. 137-138, Sector-I, Special Industrial Area, Govindpura\",\n    \"address_type\": \"Seller\",\n    \"city\": \"Bhopal\",\n    \"state\": \"Madhya Pradesh\",\n    \"pincode\": \"122017\",\n    \"country\": \"INDIA\"\n  },\n  \"delivery\": {\n    \"name\": \"Satyam Convent School\",\n    \"phone\": \"abc\",\n    \"email\": \"buyer@example.com\",\n    \"address_line\": \"Plot No. 26-27, Om Nagar Society, Sumbhal\",\n    \"address_type\": \"Home\",\n    \"city\": \"Surat\",\n    \"state\": \"Gujarat\",\n    \"pincode\": \"12\",\n    \"country\": \"INDIA\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            },
+            "description": "Returns VALIDATION_ERROR with one `details` entry per offending field."
+          },
+          "response": []
+        },
+        {
+          "name": "COD with nothing to collect -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courier_partner\": \"urbanebolt\",\n  \"order_id\": \"ERR-COD\",\n  \"service_type\": \"SDD\",\n  \"payment_mode\": \"COD\",\n  \"shipment\": {\n    \"weight_kg\": 1.1,\n    \"dimensions_cm\": {\n      \"length\": 12,\n      \"breadth\": 10,\n      \"height\": 10\n    },\n    \"pieces\": 1,\n    \"declared_value\": 100,\n    \"collectable_value\": 0,\n    \"item_description\": \"BOOKS\",\n    \"item_quantity\": 1\n  },\n  \"invoice\": {\n    \"number\": \"INV-0002\",\n    \"date\": \"2026-09-20\",\n    \"value\": 500\n  },\n  \"pickup\": {\n    \"name\": \"Rohit Athaley\",\n    \"phone\": \"9425018023\",\n    \"email\": \"seller@example.com\",\n    \"address_line\": \"Plot No. 137-138, Sector-I, Special Industrial Area, Govindpura\",\n    \"address_type\": \"Seller\",\n    \"city\": \"Bhopal\",\n    \"state\": \"Madhya Pradesh\",\n    \"pincode\": \"122017\",\n    \"country\": \"INDIA\"\n  },\n  \"delivery\": {\n    \"name\": \"Satyam Convent School\",\n    \"phone\": \"8320226438\",\n    \"email\": \"buyer@example.com\",\n    \"address_line\": \"Plot No. 26-27, Om Nagar Society, Sumbhal\",\n    \"address_type\": \"Home\",\n    \"city\": \"Surat\",\n    \"state\": \"Gujarat\",\n    \"pincode\": \"122001\",\n    \"country\": \"INDIA\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            },
+            "description": "A business rule caught before the courier ever sees the order."
+          },
+          "response": []
+        },
+        {
+          "name": "Duplicate order -> 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courier_partner\": \"mock\",\n  \"order_id\": \"{{order_id}}\",\n  \"service_type\": \"SDD\",\n  \"payment_mode\": \"COD\",\n  \"shipment\": {\n    \"weight_kg\": 1.1,\n    \"dimensions_cm\": {\n      \"length\": 12,\n      \"breadth\": 10,\n      \"height\": 10\n    },\n    \"pieces\": 1,\n    \"declared_value\": 100,\n    \"collectable_value\": 500,\n    \"item_description\": \"BOOKS\",\n    \"item_quantity\": 1\n  },\n  \"invoice\": {\n    \"number\": \"INV-0002\",\n    \"date\": \"2026-09-20\",\n    \"value\": 500\n  },\n  \"pickup\": {\n    \"name\": \"Rohit Athaley\",\n    \"phone\": \"9425018023\",\n    \"email\": \"seller@example.com\",\n    \"address_line\": \"Plot No. 137-138, Sector-I, Special Industrial Area, Govindpura\",\n    \"address_type\": \"Seller\",\n    \"city\": \"Bhopal\",\n    \"state\": \"Madhya Pradesh\",\n    \"pincode\": \"122017\",\n    \"country\": \"INDIA\"\n  },\n  \"delivery\": {\n    \"name\": \"Satyam Convent School\",\n    \"phone\": \"8320226438\",\n    \"email\": \"buyer@example.com\",\n    \"address_line\": \"Plot No. 26-27, Om Nagar Society, Sumbhal\",\n    \"address_type\": \"Home\",\n    \"city\": \"Surat\",\n    \"state\": \"Gujarat\",\n    \"pincode\": \"122001\",\n    \"country\": \"INDIA\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            },
+            "description": "Send twice. The second returns DUPLICATE_ORDER and no second shipment is created — the guarantee rests on a unique constraint, so it holds under concurrent submission too."
+          },
+          "response": []
+        },
+        {
+          "name": "Missing API key -> 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/couriers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "couriers"
+              ]
+            },
+            "description": "Remove the x-api-key header before sending."
+          },
+          "response": []
+        },
+        {
+          "name": "Unknown order -> 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/DOES-NOT-EXIST/track",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "DOES-NOT-EXIST",
+                "track"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
