@@ -1,0 +1,5 @@
+# Keep line endings stable regardless of the platform a contributor clones on.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.pdf binary
