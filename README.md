@@ -91,8 +91,10 @@ configured without touching any existing config file:
 | `MOCK_FAILURE_RATE` | `0`–`1`; probability a create fails, for demoing partial success |
 | `MOCK_LATENCY_MS` | simulated courier latency |
 
-The committed `.env.example` contains the **public UAT credentials from the UrbaneBolt
-integration docs**. Replace them for any non-sandbox use. Nothing is hardcoded — every value is
+`.env.example` leaves the UrbaneBolt credentials blank on purpose. Copy the UAT username,
+password and customer code from the UrbaneBolt integration docs into your `.env`, which is
+git-ignored, so credentials never reach the repository. Without them the service still starts
+and `mock` works fully; only UrbaneBolt calls fail. Nothing is hardcoded — every value is
 read from the environment at boot, and the service refuses to start if a required one is missing.
 
 ## Running the tests
@@ -375,8 +377,9 @@ Consumers can now send `"courier_partner": "delhivery"`. A partly-built adapter 
 
 ## Assumptions
 
-1. **Credentials.** `.env.example` uses the public UAT credentials from the UrbaneBolt
-   integration docs. Production credentials come from the environment.
+1. **Credentials.** UrbaneBolt credentials are never committed. They live in a local,
+   git-ignored `.env` (UAT values come from the integration docs); in production they come from
+   the environment.
 2. **`customerCode` is courier-specific.** It is UrbaneBolt configuration, not part of our
    normalized order schema — a deliberate example of keeping a courier's concepts out of the
    unified contract.
